@@ -27,7 +27,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./terraform
+        working-directory: ./terraform/envs/dev
 
     steps:
       - uses: actions/checkout@v4
