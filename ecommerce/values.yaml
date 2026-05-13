@@ -1,0 +1,142 @@
+common:
+  podLabels: {}
+  podAnnotations: {}
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: false
+  name: ""
+
+backendOrder:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ecommerce/backend-order
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 3003
+  service:
+    type: ClusterIP
+    port: 3003
+    targetPort: 3003
+  env: {}
+  resources: {}
+
+backendProduct:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ecommerce/backend-product
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 3003
+  service:
+    type: ClusterIP
+    port: 3003
+    targetPort: 3003
+  env: {}
+  resources: {}
+
+backendUser:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ecommerce/backend-user
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 3001
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+  env:
+    PORT: "3001"
+    DB_HOST: "postgres"
+    DB_PORT: "5432"
+    DB_NAME: "userdb"
+    DB_USER: "postgres"
+  secrets:
+    DB_PASSWORD: "postgres"
+  resources: {}
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ecommerce/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 5173
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 5173
+  env:
+    VITE_API_BASE: "http://gateway:3000/api"
+  resources: {}
+
+gateway:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ecommerce/gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 3000
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  corsOrigins:
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5500"
+    - "http://localhost:5500"
+  routes:
+    user: "http://backend-user:3001"
+    products: "http://backend-product:3004"
+    purchase: "http://backend-order:3003"
+  resources: {}
+
+ingress:
+  enabled: true
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+  hosts:
+    - host: shop.skillnestedu.id.vn
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: gateway
+          port: 3000
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+  tls: []
+
+postgres:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: postgres
+    tag: "16"
+    pullPolicy: IfNotPresent
+  containerPort: 5432
+  service:
+    type: ClusterIP
+    port: 5432
+    targetPort: 5432
+  storage:
+    enabled: true
+    size: 5Gi
+    accessModes:
+      - ReadWriteOnce
+  env:
+    POSTGRES_USER: postgres
+    POSTGRES_DB: userdb
+  secrets:
+    POSTGRES_PASSWORD: postgres
+  resources: {}

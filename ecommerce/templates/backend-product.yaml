@@ -1,0 +1,54 @@
+{{- if .Values.backendProduct.enabled}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-product
+  labels:
+    {{- include "ecommerce.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-product
+spec:
+  selector:
+    matchLabels:
+      app: backend-product
+  template:
+    metadata:
+      labels:
+        app: backend-product
+        {{- with .Values.common.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end}}
+      {{- with .Values.common.podAnnotations}}
+      annotations:
+        {{- toYaml . | nindent 8}}
+      {{- end}}
+    spec:
+      serviceAccountName: {{ include "ecommerce.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8}}
+      {{- end}}
+      containers:
+        - name: backend-product
+          image: "{{ .Values.backendProduct.image.repository}}:{{.Values.backendProduct.image.tag}}"
+          imagePullPolicy: {{.Values.backendProduct.image.pullPolicy}}
+          ports:
+            - containerPort: {{.Values.backendProduct.containerPort}}
+          resources:
+            {{- toYaml .Values.backendProduct.resources | nindent 12}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-product
+  labels:
+    {{- include "ecommerce.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-product
+spec:
+  type: {{ .Values.backendProduct.service.type }}
+  selector:
+    app: backend-product
+  ports:
+    - name: http
+      port: {{.Values.backendProduct.service.port}}
+      targetPort: {{.Values.backendProduct.service.targetPort}}
+{{- end}}

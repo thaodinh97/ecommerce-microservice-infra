@@ -1,0 +1,60 @@
+{{- if .Values.backendOrder.enabled}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-order
+  labels:
+    {{- include "ecommerce.labels" . | nindent 4}}
+    app.kubernetes.io/component: backend-order
+spec:
+  replicas: {{ .Values.backendOrder.replicaCount }}
+  selector:
+    matchLabels:
+      app: backend-order
+  template:
+    metadata:
+      labels:
+        app: backend-order
+        {{- with .Values.common.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end}}
+      {{- with .Values.common.podAnnotations}}
+      annotations:
+        {{- toYaml . | nindent 8}}
+      {{- end}}
+    spec:
+      serviceAccountName: {{ include "ecommerce.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8}}
+      {{- end}}
+      containers:
+        - name: backend-order
+          image: "{{ .Values.backendOrder.image.repository}}:{{ .Values.backendOrder.image.tag}}"
+          imagePullPolicy: {{.Values.backendOrder.image.pullPolicy}}
+          ports:
+            - containerPort: {{ .Values.backendOrder.containerPort}}
+          resources:
+            {{- toYaml .Values.backendOrder.resources | nindent 12 }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-order
+  labels:
+    {{- include "ecommerce.labels" . | nindent 4}}
+    app.kubernetes.io/component: backend-order
+spec:
+  type: {{ .Values.backendOrder.service.type }}
+  selector:
+    app: backend-order
+  ports:
+    - name: http
+      port: {{ .Values.backendOrder.service.port }}
+      targetPort: {{ .Values.backendOrder.service.targetPort}}
+
+  {{- end}}
+
+
+
